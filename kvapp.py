@@ -33,6 +33,10 @@ class KVApp:
             case _:
                 return "error: bad command"
 
+    # Method used by the network code to handle messages in/out
+    def execute_command(self, msg: bytes) -> bytes:
+        return self.run_command(msg.decode('utf-8')).encode('utf-8')
+
     def get(self, key: str):
         return self._data.get(key)
 
