@@ -19,23 +19,20 @@ class KVApp:
     # from the network and send responses back on the network
 
 
-    def run_command(self, cmd: str) -> str:
+    # Method called by the network code to handle messages in/out
+    # Any decoding/encoding of messages takes place in here
+    def execute_command(self, msg: str) -> str:
+        cmd = msg.decode('utf-8')
         match cmd.split():
             case ['get', key]:
-                return self._data.get(key, '')
+                response = self._data.get(key, "")
             case ['set', key, value]:
-                self._data[key] = value
-                return "ok"
+                response = self.set(key, value)
             case ['delete', key]:
-                if key in self._data:
-                    del self._data[key]
-                return "ok"
+                response = self.delete(key)
             case _:
-                return "error: bad command"
-
-    # Method used by the network code to handle messages in/out
-    def execute_command(self, msg: bytes) -> bytes:
-        return self.run_command(msg.decode('utf-8')).encode('utf-8')
+                response = "error: bad command"
+        return response.encode('utf-8')
 
     def get(self, key: str):
         return self._data.get(key)
@@ -57,5 +54,15 @@ def test_kvapp():
     assert kv.delete('flower') == "ok"
     assert kv.get("name") == ""
 
+def test_kvapp_messages():
+    kv = KVApp()
+    assert kv.execute_command(b'set color blue') == b'ok'
+    assert kv.execute_command(b'get color') == b'blue'
+    assert kv.execute_command(b'delete color') == b'ok'
+    assert kv.execute_command(b'get color') == b''
+    assert kv.execute_command(b'unknown command') == b'error: bad command'
+
+
 if __name__ == "__main__":
     test_kvapp()
+    test_kvapp_messages()
