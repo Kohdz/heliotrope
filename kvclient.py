@@ -1,5 +1,7 @@
 from socket import socket, AF_INET, SOCK_STREAM
 from message import send_message, recv_message
+from kvserver import KVADDRESS
+
 
 def main(addr):
     sock = socket(AF_INET, SOCK_STREAM)
@@ -13,5 +15,5 @@ def main(addr):
         print("Received >", response.decode('utf-8'))
     sock.close()
      
-main(('localhost', 12345))
+main(KVADDRESS)
 
