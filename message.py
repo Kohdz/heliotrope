@@ -11,11 +11,21 @@
 # program it directly using sockets or some low-level code.
 # The key thing: messages must be sent and received.
 
+import socket
 
-def send_message(sock, msg: bytes):
-    size = b"%10d" % len(msg)
-    sock.sendall(size)
-    sock.sendall(msg)
+
+class MessageError(Exception):
+    """Base exception for message protocol errors."""
+    pass
+
+
+def send_message(sock: socket.socket, msg: bytes):
+    try:
+        size = b"%10d" % len(msg)
+        sock.sendall(size)
+        sock.sendall(msg)
+    except OSError as e:
+         raise IOError(f"Failed to send message: {e}")
 
 
 def recv_exactly(sock, nbytes: int) -> bytes:

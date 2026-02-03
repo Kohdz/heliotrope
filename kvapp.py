@@ -1,4 +1,11 @@
-#
+"""
+This module is a simple key-value store that will serve as the
+replicated state machine in the Raft consensus algorithm.
+- "state machine" that process commands
+- Commands are applied in the same order on all replicas
+"""
+
+
 #
 # Raft is focused on the problem of creating a replicated application
 # The exact "application" doesn't really matter, but we ahve to have
@@ -21,17 +28,32 @@ class KVApp:
 
     # Method called by the network code to handle messages in/out
     # Any decoding/encoding of messages takes place in here
+    # a wrapper that does message encoding/decoding
+    # dont care where it came from, just decode it and send it out
+    # meant to connect up with the network layer
+    # messages come in as bytes and go out as bytes
+    # we could use JSON or something more complex here
     def execute_command(self, msg: str) -> str:
-        cmd = msg.decode('utf-8')
-        match cmd.split():
+        try:
+            cmd = msg.decode('utf-8')
+        except UnicodeDecodeError:
+            return b'error: invalid UTF-8 encoding'
+        
+        parts = cmd.split()
+        match parts:
             case ['get', key]:
-                response = self._data.get(key, "")
+                response = self.get(key)
             case ['set', key, value]:
                 response = self.set(key, value)
             case ['delete', key]:
                 response = self.delete(key)
+            case ['exists', key]:
+                response = self.exists(key)
+            case ['keys']:
+                response = self.keys()
             case _:
-                response = "error: bad command"
+                response = f"error: unknown command '{cmd}'"
+        
         return response.encode('utf-8')
 
     def get(self, key: str):
@@ -41,8 +63,10 @@ class KVApp:
         self._data[key] = value
     
     def delete(self, key: str):
-        del self._data[key]
-
+        if key in self._data:
+            del self._data[key]
+            return "ok"
+        return "error: key not found"
 
 # app should be testable
 # python3 -m pytest kvapp.py
